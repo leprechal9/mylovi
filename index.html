@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0ea5e9">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="HydroLove">
+    <title>HydroLove • Beba Água</title>
+    <link id="pwa-apple-icon" rel="apple-touch-icon" href="">
+    <link id="pwa-favicon" rel="icon" type="image/png" href="">
+    <link id="pwa-manifest" rel="manifest" href="">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti para celebração -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        hydro: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        },
+                        love: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            400: '#fb7185',
+                            500: '#f43f5e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Animações personalizadas para o Avatar e Águas */
+        @keyframes floatAvatar {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+
+        @keyframes celebrateBounce {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            20% { transform: scale(1.12) rotate(-6deg); }
+            40% { transform: scale(1.15) rotate(6deg); }
+            60% { transform: scale(1.1) rotate(-4deg); }
+            80% { transform: scale(1.05) rotate(4deg); }
+        }
+
+        @keyframes remindPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.5); }
+            50% { transform: scale(1.04); box-shadow: 0 0 0 14px rgba(14, 165, 233, 0); }
+        }
+
+        @keyframes waveFlow {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        @keyframes waSlideDown {
+            0% { opacity: 0; transform: translateY(-110%) scale(0.96); }
+            70% { opacity: 1; transform: translateY(4px) scale(1.01); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .wa-notif-enter {
+            animation: waSlideDown 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .avatar-idle {
+            animation: floatAvatar 3.5s ease-in-out infinite;
+        }
+
+        .avatar-celebrating {
+            animation: celebrateBounce 0.9s ease-in-out 2;
+        }
+
+        .avatar-reminding {
+            animation: remindPulse 1.5s infinite;
+        }
+
+        /* Esconde scrollbar mantendo funcionalidade */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Transição suave entre telas */
+        .screen-section {
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased selection:bg-hydro-200 selection:text-hydro-900 min-h-screen flex justify-center items-start sm:items-center sm:py-6">
+
+    <!-- Container Principal Mobile-First -->
+    <div id="app-shell" class="w-full max-w-md bg-white sm:rounded-[2.25rem] sm:shadow-2xl sm:border sm:border-slate-200/80 min-h-screen sm:min-h-[820px] sm:max-h-[860px] flex flex-col relative overflow-hidden">
+
+        <!-- Banner de Notificação Estilo WhatsApp (Topo flutuante com foto circular, selo online e ações rápidas) -->
+        <div id="reminder-banner" class="hidden fixed sm:absolute top-3 left-3 right-3 z-50 wa-notif-enter">
+            <div class="bg-[#111b21]/95 backdrop-blur-md text-white rounded-[1.35rem] p-3.5 shadow-[0_14px_34px_rgba(0,0,0,0.35)] border border-white/10">
+                <!-- Cabeçalho discreto estilo WhatsApp -->
+                <div class="flex items-center justify-between text-[11px] text-emerald-400 font-semibold mb-2 px-0.5">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-4 h-4 rounded-full bg-[#25D366] text-[#111b21] flex items-center justify-center shadow-xs">
+                            <i data-lucide="message-circle" class="w-2.5 h-2.5 fill-current"></i>
+                        </span>
+                        <span class="tracking-wide text-[#25D366] font-bold">HydroLove • Mensagem</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span id="banner-time-text" class="text-[10px] text-slate-400 font-medium">agora</span>
+                        <button onclick="ReminderManager.dismissBanner()" class="text-slate-400 hover:text-white p-0.5 rounded-full transition" aria-label="Fechar">
+                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Corpo da Notificação com Foto Circular e Bolinha Verde Online -->
+                <div class="flex items-center gap-3">
+                    <div class="relative shrink-0">
+                        <img id="banner-avatar-img" src="" alt="Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-[#25D366] shadow-md bg-slate-800">
+                        <span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-[#25D366] border-2 border-[#111b21]"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-1">
+                            <p id="banner-sender-name" class="text-sm font-extrabold text-white truncate">Meu Amor ♥</p>
+                            <span class="text-[10px] font-bold bg-[#25D366]/20 text-[#25D366] px-2 py-0.5 rounded-full shrink-0">1 nova</span>
+                        </div>
+                        <p id="banner-message" class="text-[13px] text-slate-200 leading-snug mt-0.5 line-clamp-2">
+                            Ei amor, já bebeu água agora? Bora bater nossa meta! 💧❤️
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Ações Rápidas Estilo Resposta do WhatsApp -->
+                <div class="mt-3 pt-2.5 border-t border-white/10 flex items-center gap-2">
+                    <button onclick="ReminderManager.confirmDrinkFromReminder()" class="flex-1 bg-[#25D366] hover:bg-[#20bd5a] active:scale-95 text-[#0b141a] font-extrabold text-xs py-2 px-3 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+                        <i data-lucide="check-check" class="w-4 h-4"></i>
+                        <span>Já bebi! (+<span id="banner-cup-ml">300</span>ml)</span>
+                    </button>
+                    <button onclick="ReminderManager.snoozeReminder()" class="bg-white/10 hover:bg-white/15 active:scale-95 text-slate-200 font-semibold text-xs py-2 px-3 rounded-xl transition flex items-center justify-center gap-1">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
+                        <span>Adiar 10m</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast / Mensagem Flutuante (Substitui alert()) -->
+        <div id="toast-container" class="pointer-events-none fixed top-5 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[90%] max-w-sm"></div>
+
+        <!-- ========================================================= -->
+        <!-- TELA 1: INÍCIO (Foto Principal, Meta, Botão Bebi Água)     -->
+        <!-- ========================================================= -->
+        <main id="screen-inicio" class="screen-section flex-1 flex flex-col justify-between px-6 pt-5 pb-24 overflow-y-auto no-scrollbar">
+            <!-- Cabeçalho -->
+            <header class="flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-semibold text-hydro-600 uppercase tracking-wider flex items-center gap-1">
+                        <i data-lucide="droplets" class="w-3.5 h-3.5 fill-hydro-500"></i> HydroLove
+                    </span>
+                    <h1 id="greeting-title" class="text-xl font-extrabold text-slate-900 tracking-tight">Hidratação de Hoje</h1>
+                </div>
+
+                <!-- Seletor Rápido de Avatar (Você / Meu Amor) -->
+                <div class="flex items-center bg-slate-100 p-1 rounded-full border border-slate-200/70">
+                    <button id="pill-avatar-voce" onclick="AvatarManager.setActiveAvatar('voce')" class="px-3 py-1 rounded-full text-xs font-bold transition-all">
+                        Você
+                    </button>
+                    <button id="pill-avatar-namorada" onclick="AvatarManager.setActiveAvatar('namorada')" class="px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1">
+                        <span>Meu Amor</span>
+                        <span class="text-love-500">♥</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Placar do Casal: Acompanhe o seu e o do Meu Amor em tempo real -->
+            <div class="mt-3 bg-slate-50/90 border border-slate-200/80 rounded-2xl p-2.5 shadow-xs">
+                <div class="flex items-center justify-between px-1 mb-2">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                        <i data-lucide="heart" class="w-3 h-3 text-love-500 fill-love-500"></i> Acompanhamento do Casal
+                    </span>
+                    <span id="couple-sync-badge" class="text-[10px] font-semibold text-hydro-600 bg-hydro-50 px-2 py-0.5 rounded-full border border-hydro-100">
+                        Toque para alternar
+                    </span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <!-- Resumo Você -->
+                    <div id="couple-card-voce" onclick="AvatarManager.setActiveAvatar('voce')" class="p-2 rounded-xl border transition cursor-pointer flex items-center gap-2">
+                        <img id="couple-mini-voce" src="" alt="Você" class="w-9 h-9 rounded-full object-cover border border-white shadow-xs shrink-0 bg-sky-50">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center justify-between">
+                                <span id="couple-name-voce" class="text-[11px] font-bold text-slate-800 truncate">Você</span>
+                                <span id="couple-pct-voce" class="text-[10px] font-extrabold text-hydro-600">0%</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
+                                <div id="couple-bar-voce" class="h-full bg-hydro-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                            <p id="couple-ml-voce" class="text-[10px] text-slate-500 font-medium mt-0.5 truncate">0 / 2,0 L</p>
+                        </div>
+                    </div>
+
+                    <!-- Resumo Meu Amor -->
+                    <div id="couple-card-namorada" onclick="AvatarManager.setActiveAvatar('namorada')" class="p-2 rounded-xl border transition cursor-pointer flex items-center gap-2">
+                        <img id="couple-mini-namorada" src="" alt="Meu Amor" class="w-9 h-9 rounded-full object-cover border border-white shadow-xs shrink-0 bg-rose-50">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center justify-between">
+                                <span id="couple-name-namorada" class="text-[11px] font-bold text-slate-800 truncate">Meu Amor ♥</span>
+                                <span id="couple-pct-namorada" class="text-[10px] font-extrabold text-love-500">0%</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
+                                <div id="couple-bar-namorada" class="h-full bg-love-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                            <p id="couple-ml-namorada" class="text-[10px] text-slate-500 font-medium mt-0.5 truncate">0 / 2,0 L</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Centro: Avatar Principal com Anel de Progresso Circular -->
+            <div class="flex flex-col items-center my-3 relative">
+                <!-- Balão de Fala / Status do Avatar -->
+                <div id="avatar-speech-bubble" class="mb-3 px-4 py-1.5 rounded-2xl bg-hydro-50 border border-hydro-100 text-hydro-800 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all">
+                    <span id="avatar-mood-emoji">💧</span>
+                    <span id="avatar-speech-text">Bora bater a meta de hoje!</span>
+                </div>
+
+                <!-- Círculo Principal com SVG Progress Ring -->
+                <div class="relative w-52 h-52 flex items-center justify-center">
+                    <svg class="w-full h-full" viewBox="0 0 220 220">
+                        <circle cx="110" cy="110" r="98" fill="none" stroke="#e2e8f0" stroke-width="10" />
+                        <circle id="progress-ring" class="progress-ring-circle" cx="110" cy="110" r="98" fill="none" stroke="url(#hydroGradient)" stroke-width="10" stroke-linecap="round" stroke-dasharray="615.75" stroke-dashoffset="615.75" />
+                        <defs>
+                            <linearGradient id="hydroGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#38bdf8" />
+                                <stop offset="100%" stop-color="#0284c7" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+
+                    <!-- Foto do Avatar (Baseado no wireframe circular) -->
+                    <div id="avatar-frame" onclick="AvatarManager.triggerUploadForActive()" title="Toque para trocar a foto" class="avatar-idle absolute w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-xl cursor-pointer group bg-sky-100">
+                        <img id="main-avatar-img" src="" alt="Foto Principal" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-xs font-semibold">
+                            <i data-lucide="camera" class="w-5 h-5 mb-1"></i>
+                            <span>Trocar foto</span>
+                        </div>
+                    </div>
+
+                    <!-- Badge de Estado (Lembrando / Comemorando) -->
+                    <div id="avatar-status-badge" class="absolute bottom-2 right-4 bg-white border border-slate-100 shadow-md rounded-full px-2.5 py-1 text-xs font-bold flex items-center gap-1 text-slate-700">
+                        <span id="status-dot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span id="status-label">Ativo</span>
+                    </div>
+                </div>
+
+                <!-- Atalho direto para carregar fotos da galeria -->
+                <button onclick="AvatarManager.triggerUploadForActive()" class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-hydro-50 text-slate-600 hover:text-hydro-700 border border-slate-200/80 text-[11px] font-bold transition active:scale-95">
+                    <i data-lucide="image-plus" class="w-3.5 h-3.5 text-hydro-600"></i>
+                    <span id="quick-photo-btn-label">Escolher foto da galeria</span>
+                </button>
+
+                <!-- Leitura Numérica da Meta (Ex: 1,2 L de 2 L / 60% da meta de hoje) -->
+                <div class="text-center mt-3 w-full max-w-[270px]">
+                    <div class="flex items-baseline justify-center gap-1.5">
+                        <span id="current-liters-text" class="text-3xl font-extrabold text-slate-900 tracking-tight">0,0 L</span>
+                        <span class="text-base font-medium text-slate-400">de</span>
+                        <span id="goal-liters-text" class="text-xl font-bold text-hydro-600">2,0 L</span>
+                    </div>
+                    <p id="goal-percent-text" class="text-sm font-semibold text-slate-500 mt-1">
+                        0% da meta de hoje
+                    </p>
+                    <!-- Barra linear complementar -->
+                    <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden mt-2.5 border border-slate-200/60">
+                        <div id="linear-progress-bar" class="h-full bg-gradient-to-r from-sky-400 to-hydro-600 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controles de Registro Rápido + Botão Principal "Bebi água" -->
+            <div class="space-y-3">
+                <!-- Seletor de Quantidade (ml) -->
+                <div class="flex items-center justify-center gap-2">
+                    <button onclick="App.selectCupSize(200)" data-cup="200" class="cup-btn flex-1 py-2 px-2 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-hydro-50 text-xs font-bold text-slate-700 transition flex flex-col items-center gap-0.5">
+                        <span>🥛 200 ml</span>
+                        <span class="text-[10px] font-normal text-slate-400">Copo</span>
+                    </button>
+                    <button onclick="App.selectCupSize(300)" data-cup="300" class="cup-btn flex-1 py-2 px-2 rounded-2xl border-2 border-hydro-500 bg-hydro-50 text-xs font-bold text-hydro-700 transition flex flex-col items-center gap-0.5 shadow-xs">
+                        <span>🥤 300 ml</span>
+                        <span class="text-[10px] font-normal text-hydro-600">Caneca</span>
+                    </button>
+                    <button onclick="App.selectCupSize(500)" data-cup="500" class="cup-btn flex-1 py-2 px-2 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-hydro-50 text-xs font-bold text-slate-700 transition flex flex-col items-center gap-0.5">
+                        <span>🍶 500 ml</span>
+                        <span class="text-[10px] font-normal text-slate-400">Garrafa</span>
+                    </button>
+                    <button onclick="App.openCustomAmountModal()" class="py-2 px-3 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-600 transition flex flex-col items-center justify-center gap-0.5" title="Outro valor">
+                        <span>+ Outro</span>
+                        <span class="text-[10px] font-normal text-slate-400">ml</span>
+                    </button>
+                </div>
+
+                <!-- Botão Principal CTA: Bebi água -->
+                <button id="btn-bebi-agua" onclick="App.drinkWater()" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-hydro-500 to-hydro-600 hover:from-hydro-600 hover:to-hydro-700 active:scale-[0.98] text-white font-extrabold text-base shadow-lg shadow-hydro-500/30 transition-all flex items-center justify-center gap-2.5">
+                    <i data-lucide="droplet" class="w-5 h-5 fill-white"></i>
+                    <span id="main-drink-btn-label">Bebi água (+300 ml)</span>
+                </button>
+
+                <!-- Rodapé da Home: Próximo lembrete + Botão de Simular Notificação + Desfazer -->
+                <div class="flex items-center justify-between pt-1 px-1 text-xs text-slate-500">
+                    <div class="flex items-center gap-1.5">
+                        <i data-lucide="bell-ring" class="w-3.5 h-3.5 text-hydro-500"></i>
+                        <span id="next-reminder-text">Próximo: --:--</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="ReminderManager.triggerReminder(true)" class="text-hydro-600 hover:text-hydro-700 font-semibold underline underline-offset-2">
+                            Testar lembrete
+                        </button>
+                        <button onclick="App.undoLastDrink()" class="text-slate-400 hover:text-slate-600 font-medium">
+                            Desfazer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ========================================================= -->
+        <!-- TELA 2: PROGRESSO (Gráfico 7 dias, Sequência, Conquistas) -->
+        <!-- ========================================================= -->
+        <section id="screen-progresso" class="screen-section hidden flex-1 flex flex-col px-6 pt-6 pb-24 overflow-y-auto no-scrollbar space-y-5">
+            <header class="flex items-center justify-between gap-2">
+                <div>
+                    <span class="text-xs font-semibold text-hydro-600 uppercase tracking-wider">Histórico</span>
+                    <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Seu Progresso</h2>
+                </div>
+                <div class="inline-flex p-1 rounded-full bg-slate-100 border border-slate-200/80">
+                    <button id="prog-tab-voce" onclick="AvatarManager.setActiveAvatar('voce')" class="px-2.5 py-1 rounded-full text-[11px] font-bold transition">Você</button>
+                    <button id="prog-tab-namorada" onclick="AvatarManager.setActiveAvatar('namorada')" class="px-2.5 py-1 rounded-full text-[11px] font-bold transition">Meu Amor ♥</button>
+                </div>
+            </header>
+
+            <!-- Card Gráfico dos Últimos 7 Dias -->
+            <div class="bg-slate-50 border border-slate-200/80 rounded-3xl p-5 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">Gráfico dos últimos 7 dias</h3>
+                        <p id="chart-goal-subtitle" class="text-xs text-slate-400">Meta diária: 2,0 L</p>
+                    </div>
+                    <span id="chart-today-badge" class="text-xs font-extrabold text-hydro-700 bg-hydro-100 px-2.5 py-1 rounded-full">Hoje: 0,0 L</span>
+                </div>
+
+                <!-- Barras do Gráfico -->
+                <div class="relative h-44 flex items-end justify-between gap-2 pt-6 pb-1 px-1">
+                    <!-- Linha tracejada da Meta -->
+                    <div id="chart-goal-line" class="absolute left-0 right-0 border-t-2 border-dashed border-hydro-300 pointer-events-none flex justify-end" style="bottom: 75%;">
+                        <span class="text-[10px] font-bold text-hydro-500 bg-slate-50 px-1 -mt-2.5">Meta</span>
+                    </div>
+                    <!-- Colunas geradas via JS -->
+                    <div id="weekly-chart-bars" class="w-full h-full flex items-end justify-between gap-2 z-10"></div>
+                </div>
+            </div>
+
+            <!-- Cards de Métricas: Sequência e Média Semanal -->
+            <div class="grid grid-cols-2 gap-3.5">
+                <div class="bg-amber-50/70 border border-amber-200/70 rounded-3xl p-4 flex flex-col justify-between">
+                    <div class="w-9 h-9 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-2">
+                        <i data-lucide="flame" class="w-5 h-5 fill-amber-500"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-amber-800/80">Sequência</p>
+                        <p id="streak-days-text" class="text-2xl font-extrabold text-slate-900 mt-0.5">0 dias</p>
+                    </div>
+                </div>
+
+                <div class="bg-hydro-50/70 border border-hydro-200/70 rounded-3xl p-4 flex flex-col justify-between">
+                    <div class="w-9 h-9 rounded-2xl bg-hydro-100 text-hydro-600 flex items-center justify-center mb-2">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-hydro-800/80">Média semanal</p>
+                        <p id="weekly-avg-text" class="text-2xl font-extrabold text-slate-900 mt-0.5">0,0 L</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção de Conquistas -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-bold text-slate-800">Conquistas</h3>
+                    <span id="achievements-count" class="text-xs font-semibold text-slate-400">0/4 desbloqueadas</span>
+                </div>
+                <div id="achievements-grid" class="grid grid-cols-2 gap-3">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- TELA 3: AJUSTES (Avatar Você/Meu Amor, Horários, Intervalo)-->
+        <!-- ========================================================= -->
+        <section id="screen-ajustes" class="screen-section hidden flex-1 flex flex-col px-6 pt-6 pb-24 overflow-y-auto no-scrollbar space-y-5">
+            <header>
+                <span class="text-xs font-semibold text-hydro-600 uppercase tracking-wider">Personalização</span>
+                <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Ajustes</h2>
+            </header>
+
+            <!-- Bloco 1: Avatar (Você ou Meu Amor + Trocar foto + Recorte Focal) -->
+            <div class="bg-slate-50 border border-slate-200/80 rounded-3xl p-5 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">Avatar & Fotos</h3>
+                        <p class="text-xs text-slate-500">Toque para alternar ou carregar foto</p>
+                    </div>
+                    <span class="text-xs font-bold text-love-500 bg-love-50 px-2.5 py-1 rounded-full">Casal ♥</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Card Avatar Você -->
+                    <div id="settings-card-voce" onclick="AvatarManager.setActiveAvatar('voce')" class="cursor-pointer rounded-2xl p-3 border-2 border-hydro-500 bg-white flex flex-col items-center text-center transition relative">
+                        <div class="relative w-16 h-16 rounded-full overflow-hidden mb-2 border-2 border-hydro-200">
+                            <img id="settings-img-voce" src="" alt="Você" class="w-full h-full object-cover">
+                        </div>
+                        <span id="settings-name-voce" class="text-xs font-bold text-slate-800">Você</span>
+                        <button type="button" onclick="event.stopPropagation(); AvatarManager.triggerUpload('voce')" class="mt-2 text-[11px] font-semibold text-hydro-600 hover:text-hydro-700 bg-hydro-50 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                            <i data-lucide="upload" class="w-3 h-3"></i> Trocar foto
+                        </button>
+                    </div>
+
+                    <!-- Card Avatar Meu Amor -->
+                    <div id="settings-card-namorada" onclick="AvatarManager.setActiveAvatar('namorada')" class="cursor-pointer rounded-2xl p-3 border border-slate-200 bg-white flex flex-col items-center text-center transition relative">
+                        <div class="relative w-16 h-16 rounded-full overflow-hidden mb-2 border-2 border-love-200">
+                            <img id="settings-img-namorada" src="" alt="Meu Amor" class="w-full h-full object-cover">
+                        </div>
+                        <span id="settings-name-namorada" class="text-xs font-bold text-slate-800">Meu Amor ♥</span>
+                        <button type="button" onclick="event.stopPropagation(); AvatarManager.triggerUpload('namorada')" class="mt-2 text-[11px] font-semibold text-love-500 hover:text-rose-600 bg-love-50 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                            <i data-lucide="upload" class="w-3 h-3"></i> Trocar foto
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Enquadramento Focal (Para fotos juntos: Foco em Você, Casal ou Meu Amor) -->
+                <div class="pt-1">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <p class="text-[11px] font-semibold text-slate-500">Enquadramento da foto no círculo:</p>
+                        <span id="focal-label" class="text-[11px] font-bold text-hydro-600">Casal</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="AvatarManager.setFocalPoint('left')" data-focal="left" class="focal-btn py-1.5 px-2 rounded-xl border border-slate-200 bg-white text-[11px] font-semibold text-slate-600 hover:bg-slate-50 transition">
+                            ⬅️ Foco Você
+                        </button>
+                        <button type="button" onclick="AvatarManager.setFocalPoint('center')" data-focal="center" class="focal-btn py-1.5 px-2 rounded-xl border-2 border-hydro-500 bg-hydro-50 text-[11px] font-bold text-hydro-700 transition">
+                            💑 Casal
+                        </button>
+                        <button type="button" onclick="AvatarManager.setFocalPoint('right')" data-focal="right" class="focal-btn py-1.5 px-2 rounded-xl border border-slate-200 bg-white text-[11px] font-semibold text-slate-600 hover:bg-slate-50 transition">
+                            Meu Amor ➡️
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Galeria Rápida de Momentos (Cada slot permite adicionar e aplicar a foto da galeria) -->
+                <div class="pt-1">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-[11px] font-semibold text-slate-500">Momentos pré-selecionados (toque para adicionar/usar):</p>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2">
+                        <!-- Slot 0: No Carro -->
+                        <div class="flex flex-col items-center gap-1">
+                            <div class="relative w-full aspect-square">
+                                <button type="button" onclick="AvatarManager.handlePresetSlotClick(0)" id="preset-btn-0" class="w-full h-full rounded-xl overflow-hidden border-2 border-slate-200 hover:border-hydro-500 transition relative group">
+                                    <img id="preset-thumb-0" src="" alt="No carro" class="w-full h-full object-cover">
+                                    <span id="preset-overlay-0" class="absolute inset-0 bg-slate-900/35 flex items-center justify-center text-white opacity-95 group-hover:opacity-100 transition">
+                                        <i data-lucide="camera" class="w-4 h-4"></i>
+                                    </span>
+                                </button>
+                                <button type="button" onclick="event.stopPropagation(); AvatarManager.triggerPresetUpload(0)" title="Trocar foto No Carro" class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-hydro-600 hover:bg-hydro-700 text-white shadow-sm flex items-center justify-center border border-white transition">
+                                    <i data-lucide="plus" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+                            <span class="text-[10px] font-medium text-slate-600 truncate w-full text-center">No Carro</span>
+                        </div>
+
+                        <!-- Slot 1: Selfie Perto -->
+                        <div class="flex flex-col items-center gap-1">
+                            <div class="relative w-full aspect-square">
+                                <button type="button" onclick="AvatarManager.handlePresetSlotClick(1)" id="preset-btn-1" class="w-full h-full rounded-xl overflow-hidden border-2 border-slate-200 hover:border-hydro-500 transition relative group">
+                                    <img id="preset-thumb-1" src="" alt="Selfie perto" class="w-full h-full object-cover">
+                                    <span id="preset-overlay-1" class="absolute inset-0 bg-slate-900/35 flex items-center justify-center text-white opacity-95 group-hover:opacity-100 transition">
+                                        <i data-lucide="camera" class="w-4 h-4"></i>
+                                    </span>
+                                </button>
+                                <button type="button" onclick="event.stopPropagation(); AvatarManager.triggerPresetUpload(1)" title="Trocar foto Selfie Perto" class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-hydro-600 hover:bg-hydro-700 text-white shadow-sm flex items-center justify-center border border-white transition">
+                                    <i data-lucide="plus" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+                            <span class="text-[10px] font-medium text-slate-600 truncate w-full text-center">Selfie Perto</span>
+                        </div>
+
+                        <!-- Slot 2: Certificado -->
+                        <div class="flex flex-col items-center gap-1">
+                            <div class="relative w-full aspect-square">
+                                <button type="button" onclick="AvatarManager.handlePresetSlotClick(2)" id="preset-btn-2" class="w-full h-full rounded-xl overflow-hidden border-2 border-slate-200 hover:border-hydro-500 transition relative group">
+                                    <img id="preset-thumb-2" src="" alt="Certificado" class="w-full h-full object-cover">
+                                    <span id="preset-overlay-2" class="absolute inset-0 bg-slate-900/35 flex items-center justify-center text-white opacity-95 group-hover:opacity-100 transition">
+                                        <i data-lucide="camera" class="w-4 h-4"></i>
+                                    </span>
+                                </button>
+                                <button type="button" onclick="event.stopPropagation(); AvatarManager.triggerPresetUpload(2)" title="Trocar foto Certificado" class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-hydro-600 hover:bg-hydro-700 text-white shadow-sm flex items-center justify-center border border-white transition">
+                                    <i data-lucide="plus" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+                            <span class="text-[10px] font-medium text-slate-600 truncate w-full text-center">Certificado 🏆</span>
+                        </div>
+
+                        <!-- Slot 3: Noite Polo -->
+                        <div class="flex flex-col items-center gap-1">
+                            <div class="relative w-full aspect-square">
+                                <button type="button" onclick="AvatarManager.handlePresetSlotClick(3)" id="preset-btn-3" class="w-full h-full rounded-xl overflow-hidden border-2 border-slate-200 hover:border-hydro-500 transition relative group">
+                                    <img id="preset-thumb-3" src="" alt="Noite Polo" class="w-full h-full object-cover">
+                                    <span id="preset-overlay-3" class="absolute inset-0 bg-slate-900/35 flex items-center justify-center text-white opacity-95 group-hover:opacity-100 transition">
+                                        <i data-lucide="camera" class="w-4 h-4"></i>
+                                    </span>
+                                </button>
+                                <button type="button" onclick="event.stopPropagation(); AvatarManager.triggerPresetUpload(3)" title="Trocar foto Noite Polo" class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-hydro-600 hover:bg-hydro-700 text-white shadow-sm flex items-center justify-center border border-white transition">
+                                    <i data-lucide="plus" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+                            <span class="text-[10px] font-medium text-slate-600 truncate w-full text-center">Noite Polo</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Foto especial para quando bater a meta / comemorar -->
+                <div class="bg-white border border-slate-200/80 rounded-2xl p-3 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <img id="settings-img-celebrate" src="" alt="Comemorando" class="w-11 h-11 rounded-full object-cover border border-amber-300 shrink-0">
+                        <div class="min-w-0">
+                            <p class="text-xs font-bold text-slate-800 truncate">Foto Comemorando 🎉</p>
+                            <p class="text-[11px] text-slate-400 truncate">Aparece ao beber água e bater a meta</p>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                        Defina a imagem que aparecerá na tela inicial do celular ao instalar o app.
+                    </p>
+                </div>
+
+                <!-- Ícone do App na Tela Inicial do Celular (PWA) -->
+                <div class="bg-gradient-to-r from-hydro-50 to-sky-50 border border-hydro-200 rounded-2xl p-3 space-y-2.5">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <img id="settings-img-appicon" src="" alt="Ícone do App" class="w-12 h-12 rounded-2xl object-cover border-2 border-white shadow-sm shrink-0 bg-purple-100">
+                            <div class="min-w-0">
+                                <p class="text-xs font-extrabold text-slate-800 truncate">Ícone no Celular 📲</p>
+                                <p class="text-[11px] text-slate-500 leading-tight">Define a foto do atalho ao instalar</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="AvatarManager.triggerUpload('appicon')" class="shrink-0 text-[11px] font-bold text-white bg-hydro-600 hover:bg-hydro-700 px-3 py-1.5 rounded-xl shadow-xs transition">
+                            Escolher
+                        </button>
+                    </div>
+                    <button type="button" id="btn-install-pwa" onclick="PWAManager.promptInstall()" class="w-full py-2 px-3 rounded-xl bg-white hover:bg-slate-50 text-hydro-700 border border-hydro-200 text-[11px] font-extrabold flex items-center justify-center gap-1.5 transition">
+                        <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+                        <span>Instalar App na Tela Inicial</span>
+                    </button>
+                </div>
+
+                <!-- Nomes Personalizáveis do Casal -->
+                <div class="grid grid-cols-2 gap-2.5 pt-1">
+                    <div>
+                        <label for="input-name-voce" class="block text-[11px] font-semibold text-slate-500 mb-1">Seu nome / apelido</label>
+                        <input id="input-name-voce" type="text" maxlength="18" value="Você" onchange="App.updateProfileNames()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-hydro-500">
+                    </div>
+                    <div>
+                        <label for="input-name-namorada" class="block text-[11px] font-semibold text-slate-500 mb-1">Apelido dela ♥</label>
+                        <input id="input-name-namorada" type="text" maxlength="18" value="Meu Amor" onchange="App.updateProfileNames()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-love-500">
+                    </div>
+                </div>
+
+                <!-- Inputs ocultos para upload real de foto -->
+                <input type="file" id="upload-voce" accept="image/*" class="hidden" onchange="AvatarManager.handleFileUpload(event, 'voce')">
+                <input type="file" id="upload-namorada" accept="image/*" class="hidden" onchange="AvatarManager.handleFileUpload(event, 'namorada')">
+                <input type="file" id="upload-celebrate" accept="image/*" class="hidden" onchange="AvatarManager.handleFileUpload(event, 'celebrate')">
+                <input type="file" id="upload-appicon" accept="image/*" class="hidden" onchange="AvatarManager.handleFileUpload(event, 'appicon')">
+                <input type="file" id="upload-preset" accept="image/*" class="hidden" onchange="AvatarManager.handlePresetFileUpload(event)">
+            </div>
+
+            <!-- Bloco 2: Meta Diária -->
+            <div class="bg-slate-50 border border-slate-200/80 rounded-3xl p-5 space-y-3">
+                <div class="flex items-center justify-between">
+                    <label for="input-daily-goal" class="text-sm font-bold text-slate-800">Meta diária de água</label>
+                    <span id="settings-goal-display" class="text-sm font-extrabold text-hydro-600">2,0 L (2000 ml)</span>
+                </div>
+                <input id="input-daily-goal" type="range" min="1000" max="4500" step="100" value="2000" oninput="App.updateGoalPreview(this.value)" onchange="App.saveSettings()" class="w-full accent-hydro-600 cursor-pointer h-2 bg-slate-200 rounded-lg">
+                <div class="flex justify-between text-[11px] text-slate-400 font-medium">
+                    <span>1,0 L</span>
+                    <span>2,0 L</span>
+                    <span>3,0 L</span>
+                    <span>4,5 L</span>
+                </div>
+            </div>
+
+            <!-- Bloco 3: Horários e Intervalo -->
+            <div class="bg-slate-50 border border-slate-200/80 rounded-3xl p-5 space-y-4">
+                <h3 class="text-sm font-bold text-slate-800">Horários e Lembretes</h3>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="input-start-time" class="block text-xs font-semibold text-slate-500 mb-1">Início do dia</label>
+                        <input id="input-start-time" type="time" value="08:00" onchange="App.saveSettings()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 focus:outline-none focus:border-hydro-500">
+                    </div>
+                    <div>
+                        <label for="input-end-time" class="block text-xs font-semibold text-slate-500 mb-1">Fim do dia</label>
+                        <input id="input-end-time" type="time" value="22:00" onchange="App.saveSettings()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 focus:outline-none focus:border-hydro-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="input-interval" class="block text-xs font-semibold text-slate-500 mb-1">Intervalo dos lembretes</label>
+                    <select id="input-interval" onchange="App.saveSettings()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-hydro-500">
+                        <option value="30">A cada 30 minutos</option>
+                        <option value="60" selected>A cada 1 hora</option>
+                        <option value="90">A cada 1 hora e 30 min</option>
+                        <option value="120">A cada 2 horas</option>
+                    </select>
+                </div>
+
+                <!-- Toggle de Notificações do Navegador -->
+                <div class="flex items-center justify-between pt-2 border-t border-slate-200/70 gap-3">
+                    <div>
+                        <p class="text-sm font-bold text-slate-800">Notificações com Avatar</p>
+                        <p id="notif-permission-status" class="text-xs text-slate-500">Service Worker + Notification API (com foto)</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button type="button" onclick="ReminderManager.requestNotificationPermission()" id="btn-enable-notif" class="px-3 py-1.5 rounded-xl bg-hydro-50 hover:bg-hydro-100 text-hydro-700 text-xs font-bold border border-hydro-200 transition active:scale-95">
+                            Ativar Push
+                        </button>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input id="toggle-notifications" type="checkbox" checked onchange="ReminderManager.toggleNotifications(this.checked)" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-hydro-500"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botão para reabrir assistente de 1ª vez -->
+            <button onclick="App.openOnboarding()" class="w-full py-3 px-4 rounded-2xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold transition flex items-center justify-center gap-2">
+                <i data-lucide="wand-2" class="w-4 h-4 text-hydro-500"></i>
+                Refazer configuração inicial (1ª vez)
+            </button>
+
+            <!-- Exportar / Importar Backup (Para transferir fotos e histórico entre aparelhos) -->
+            <div class="grid grid-cols-2 gap-2.5 pt-1">
+                <button type="button" onclick="App.exportBackup()" class="py-2.5 px-3 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
+                    <i data-lucide="download" class="w-3.5 h-3.5 text-hydro-600"></i>
+                    <span>Salvar Backup</span>
+                </button>
+                <button type="button" onclick="document.getElementById('import-backup-input').click()" class="py-2.5 px-3 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold transition flex items-center justify-center gap-1.5">
+                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-emerald-600"></i>
+                    <span>Restaurar Backup</span>
+                </button>
+                <input type="file" id="import-backup-input" accept="application/json" class="hidden" onchange="App.importBackup(event)">
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- NAVEGAÇÃO INFERIOR (Início | Progresso | Ajustes)          -->
+        <!-- ========================================================= -->
+        <nav class="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-6 py-2.5 flex items-center justify-around z-30">
+            <button onclick="App.navigate('inicio')" data-nav="inicio" class="nav-btn flex flex-col items-center gap-1 py-1 px-4 rounded-2xl text-hydro-600 font-bold transition">
+                <i data-lucide="droplet" class="w-5 h-5 fill-hydro-500/20"></i>
+                <span class="text-[11px]">Início</span>
+            </button>
+            <button onclick="App.navigate('progresso')" data-nav="progresso" class="nav-btn flex flex-col items-center gap-1 py-1 px-4 rounded-2xl text-slate-400 hover:text-slate-600 font-medium transition">
+                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                <span class="text-[11px]">Progresso</span>
+            </button>
+            <button onclick="App.navigate('ajustes')" data-nav="ajustes" class="nav-btn flex flex-col items-center gap-1 py-1 px-4 rounded-2xl text-slate-400 hover:text-slate-600 font-medium transition">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+                <span class="text-[11px]">Ajustes</span>
+            </button>
+        </nav>
+
+        <!-- ========================================================= -->
+        <!-- MODAL DE 1ª VEZ (ONBOARDING DO FLUXOGRAMA)                -->
+        <!-- ========================================================= -->
+        <div id="onboarding-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-5">
+                <div class="text-center">
+                    <span class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-hydro-100 text-hydro-600 mb-2">
+                        <i data-lucide="droplets" class="w-6 h-6"></i>
+                    </span>
+                    <h2 class="text-lg font-extrabold text-slate-900">Bem-vindo ao HydroLove!</h2>
+                    <p class="text-xs text-slate-500 mt-1">Configure seu companheiro de hidratação em 3 passos rápidos.</p>
+                </div>
+
+                <!-- Passo 1: Escolher Avatar Principal -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-700">1. Escolha o avatar principal:</label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button type="button" id="ob-avatar-voce" onclick="App.selectOnboardingAvatar('voce')" class="p-2.5 rounded-2xl border-2 border-hydro-500 bg-hydro-50/50 flex flex-col items-center gap-1.5 transition">
+                            <img id="ob-img-voce" src="" alt="Você" class="w-12 h-12 rounded-full object-cover">
+                            <span class="text-xs font-bold text-slate-800">Sua Foto</span>
+                        </button>
+                        <button type="button" id="ob-avatar-namorada" onclick="App.selectOnboardingAvatar('namorada')" class="p-2.5 rounded-2xl border border-slate-200 bg-white flex flex-col items-center gap-1.5 transition">
+                            <img id="ob-img-namorada" src="" alt="Meu Amor" class="w-12 h-12 rounded-full object-cover">
+                            <span class="text-xs font-bold text-slate-800">Meu Amor ♥</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Passo 2: Meta Diária -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="text-slate-700">2. Meta diária de água:</span>
+                        <span id="ob-goal-label" class="text-hydro-600">2,0 L</span>
+                    </div>
+                    <input id="ob-goal-range" type="range" min="1000" max="4000" step="100" value="2000" oninput="document.getElementById('ob-goal-label').textContent = (this.value/1000).toFixed(1).replace('.', ',') + ' L'" class="w-full accent-hydro-600 cursor-pointer">
+                </div>
+
+                <!-- Passo 3: Horários e Frequência -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-700">3. Horários e frequência:</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-semibold">Das</span>
+                            <input id="ob-start" type="time" value="08:00" class="w-full border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-semibold">Até</span>
+                            <input id="ob-end" type="time" value="22:00" class="w-full border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold">
+                        </div>
+                    </div>
+                    <select id="ob-interval" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700">
+                        <option value="30">Lembrar a cada 30 minutos</option>
+                        <option value="60" selected>Lembrar a cada 1 hora</option>
+                        <option value="120">Lembrar a cada 2 horas</option>
+                    </select>
+                </div>
+
+                <button onclick="App.finishOnboarding()" class="w-full py-3.5 rounded-2xl bg-hydro-600 hover:bg-hydro-700 text-white font-extrabold text-sm shadow-lg shadow-hydro-500/30 transition">
+                    Começar a beber água 💧
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- MODAL DE RESUMO DO DIA & CONQUISTA (META ATINGIDA)        -->
+        <!-- ========================================================= -->
+        <div id="goal-summary-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
+                <div class="relative w-24 h-24 mx-auto">
+                    <img id="summary-celebrate-img" src="" alt="Comemorando" class="w-24 h-24 rounded-full object-cover border-4 border-amber-400 shadow-lg">
+                    <span class="absolute -bottom-1 -right-1 text-2xl">🏆</span>
+                </div>
+                <div>
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-amber-600 bg-amber-100 px-3 py-1 rounded-full">Meta Batida!</span>
+                    <h3 class="text-xl font-extrabold text-slate-900 mt-2">Missão Cumprida!</h3>
+                    <p id="summary-modal-desc" class="text-xs text-slate-500 mt-1">Você alcançou 100% da meta diária de hidratação!</p>
+                </div>
+                <div class="grid grid-cols-2 gap-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-200/70">
+                    <div>
+                        <p class="text-[11px] text-slate-400 font-semibold">Total Hoje</p>
+                        <p id="summary-total-liters" class="text-base font-extrabold text-hydro-600">2,0 L</p>
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-slate-400 font-semibold">Sequência</p>
+                        <p id="summary-streak-count" class="text-base font-extrabold text-amber-600">1 dia 🔥</p>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('goal-summary-modal').classList.add('hidden')" class="w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition">
+                    Continuar hidratado
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- MODAL DE QUANTIDADE PERSONALIZADA                         -->
+        <!-- ========================================================= -->
+        <div id="custom-amount-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl max-w-xs w-full p-5 shadow-2xl space-y-4">
+                <h3 class="text-base font-extrabold text-slate-900 text-center">Quantidade personalizada</h3>
+                <div class="flex items-center justify-center gap-2">
+                    <input id="custom-ml-input" type="number" min="50" max="2000" step="50" value="250" class="w-28 text-center text-xl font-extrabold border-2 border-hydro-400 rounded-2xl py-2 focus:outline-none">
+                    <span class="text-sm font-bold text-slate-500">ml</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('custom-amount-modal').classList.add('hidden')" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold">Cancelar</button>
+                    <button onclick="App.confirmCustomAmount()" class="flex-1 py-2.5 rounded-xl bg-hydro-600 text-white text-xs font-bold">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ---------------------------------------------------------
+           CONFIGURAÇÃO DAS FOTOS (FOTOS_CONFIG & FALLBACKS)
+        --------------------------------------------------------- */
+        const FOTOS_CONFIG = {
+            voce: 'assets/avatar-voce.jpg',
+            namorada: 'assets/avatar-namorada.jpg',
+            comemorando: 'assets/avatar-comemoracao.jpg',
+            momentos: [
+                { label: 'No Carro', src: 'assets/foto-carro.jpg' },
+                { label: 'Selfie Perto', src: 'assets/foto-selfie.jpg' },
+                { label: 'Certificado 🏆', src: 'assets/avatar-comemoracao.jpg' },
+                { label: 'Noite Polo', src: 'assets/foto-noite.jpg' }
+            ]
+        };
+
+        const FALLBACK_PLACEHOLDERS = {
+            voce: 'https://placehold.co/300x300/e0f2fe/0284c7?text=Voce',
+            namorada: 'https://placehold.co/300x300/ffe4e6/f43f5e?text=Meu+Amor',
+            comemorando: 'https://placehold.co/300x300/fef3c7/d97706?text=Comemorando',
+            momentos: [
+                'https://placehold.co/200x200/e0f2fe/0284c7?text=No+Carro',
+                'https://placehold.co/200x200/ffe4e6/f43f5e?text=Selfie',
+                'https://placehold.co/200x200/fef3c7/d97706?text=Certificado',
+                'https://placehold.co/200x200/f1f5f9/475569?text=Noite+Polo'
+            ]
+        };
+
+        const DEFAULT_AVATARS = {
+            voce: FOTOS_CONFIG.voce,
+            namorada: FOTOS_CONFIG.namorada,
+            celebrate: FOTOS_CONFIG.comemorando
+        };
+
+        const PRESET_PHOTOS = FOTOS_CONFIG.momentos.map(m => m.src);
+
+        /* ---------------------------------------------------------
+           MÓDULO: StorageService (Persistência Local)
+        --------------------------------------------------------- */
+        const StorageService = {
+            KEY: 'hydrolove_app_state_v2',
+
+            getTodayKey() {
+                const d = new Date();
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            },
+
+            getDefaultState() {
+                const today = this.getTodayKey();
+                return {
+                    onboarded: false,
+                    activeAvatar: 'voce',
+                    focalPoint: 'center', // 'left' | 'center' | 'right'
+                    selectedCupSize: 300,
+                    settings: {
+                        dailyGoalMl: 2000,
+                        startTime: '08:00',
+                        endTime: '22:00',
+                        intervalMinutes: 60,
+                        notificationsEnabled: true
+                    },
+                    avatars: {
+                        voce: { name: 'Você', photo: DEFAULT_AVATARS.voce },
+                        namorada: { name: 'Meu Amor', photo: DEFAULT_AVATARS.namorada }
+                    },
+                    celebratePhoto: DEFAULT_AVATARS.celebrate,
+                    appIconPhoto: 'assets/avatar-app-icon.jpg',
+                    presetPhotos: [...PRESET_PHOTOS],
+                    histories: {
+                        voce: { [today]: [] },
+                        namorada: { [today]: [] }
+                    },
+                    goalCelebratedDate: {
+                        voce: null,
+                        namorada: null
+                    }
+                };
+            },
+
+            load() {
+                try {
+                    const raw = localStorage.getItem(this.KEY);
+                    if (!raw) return this.getDefaultState();
+                    const parsed = JSON.parse(raw);
+                    const def = this.getDefaultState();
+                    const today = this.getTodayKey();
+
+                    // Migração suave caso exista histórico antigo único (parsed.history)
+                    const legacyHistory = parsed.history || { [today]: [] };
+                    const histories = {
+                        voce: { ...def.histories.voce, ...(parsed.histories?.voce || legacyHistory) },
+                        namorada: { ...def.histories.namorada, ...(parsed.histories?.namorada || { [today]: [] }) }
+                    };
+
+                    // Migração suave caso goalCelebratedDate fosse string antiga
+                    let goalCelebratedDate = { voce: null, namorada: null };
+                    if (parsed.goalCelebratedDate && typeof parsed.goalCelebratedDate === 'object') {
+                        goalCelebratedDate = { ...goalCelebratedDate, ...parsed.goalCelebratedDate };
+                    } else if (typeof parsed.goalCelebratedDate === 'string') {
+                        goalCelebratedDate[parsed.activeAvatar || 'voce'] = parsed.goalCelebratedDate;
+                    }
+
+                    // Garante que o nome padrão "Namorada" antigo seja atualizado para "Meu Amor"
+                    const mergedNamorada = { ...def.avatars.namorada, ...(parsed.avatars?.namorada || {}) };
+                    if (mergedNamorada.name === 'Namorada') {
+                        mergedNamorada.name = 'Meu Amor';
+                    }
+
+                    return {
+                        ...def,
+                        ...parsed,
+                        settings: { ...def.settings, ...(parsed.settings || {}) },
+                        avatars: {
+                            voce: { ...def.avatars.voce, ...(parsed.avatars?.voce || {}) },
+                            namorada: mergedNamorada
+                        },
+                        presetPhotos: Array.isArray(parsed.presetPhotos) && parsed.presetPhotos.length === 4
+                            ? parsed.presetPhotos
+                            : [...def.presetPhotos],
+                        histories,
+                        goalCelebratedDate
+                    };
+                } catch (e) {
+                    console.error('Erro ao carregar dados:', e);
+                    return this.getDefaultState();
+                }
+            },
+
+            save(state) {
+                try {
+                    localStorage.setItem(this.KEY, JSON.stringify(state));
+                } catch (e) {
+                    console.error('Erro ao salvar dados (imagem muito grande?):', e);
+                    UI.showToast('Não foi possível salvar a imagem (tente uma foto menor).', 'error');
+                }
+            }
+        };
+
+        let AppState = StorageService.load();
+
+        /* ---------------------------------------------------------
+           MÓDULO: UI Helpers (Toast sem alert())
+        --------------------------------------------------------- */
+        const UI = {
+            showToast(message, type = 'info') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                const colors = {
+                    info: 'bg-slate-900 text-white',
+                    success: 'bg-emerald-600 text-white',
+                    love: 'bg-love-500 text-white',
+                    error: 'bg-rose-600 text-white'
+                };
+                toast.className = `${colors[type] || colors.info} px-4 py-3 rounded-2xl shadow-xl text-xs font-bold flex items-center justify-center text-center transition-all duration-300 opacity-0 translate-y-[-8px]`;
+                toast.textContent = message;
+                container.appendChild(toast);
+
+                requestAnimationFrame(() => {
+                    toast.classList.remove('opacity-0', 'translate-y-[-8px]');
+                });
+
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'translate-y-[-8px]');
+                    setTimeout(() => toast.remove(), 300);
+                }, 2600);
+            }
+        };
+
+        /* ---------------------------------------------------------
+           MÓDULO: avatar.js (AvatarManager)
+           Gerencia foto escolhida, estado (normal, lembrando, comemorando) e upload
+        --------------------------------------------------------- */
+        const AvatarManager = {
+            currentState: 'normal', // 'normal' | 'reminding' | 'celebrating'
+            stateTimer: null,
+            activePresetUploadIndex: 0,
+
+            getActiveData() {
+                return AppState.avatars[AppState.activeAvatar] || AppState.avatars.voce;
+            },
+
+            getFocalObjectPosition() {
+                if (AppState.focalPoint === 'left') return '22% 20%';
+                if (AppState.focalPoint === 'right') return '78% 20%';
+                return '50% 20%';
+            },
+
+            setFocalPoint(point) {
+                AppState.focalPoint = point;
+                StorageService.save(AppState);
+                this.render();
+                const labels = { left: 'Foco em Você', center: 'Casal Centralizado', right: 'Foco no Meu Amor' };
+                UI.showToast(`Enquadramento: ${labels[point]}`, 'info');
+            },
+
+            handlePresetSlotClick(index) {
+                const currentSrc = AppState.presetPhotos[index];
+                // Se o slot ainda está com o caminho padrão (sem foto da galeria), abre a galeria direto
+                if (!currentSrc || !currentSrc.startsWith('data:')) {
+                    this.triggerPresetUpload(index);
+                } else {
+                    // Se já tem uma foto carregada nesse momento, aplica ela no avatar ativo
+                    this.applyPresetPhoto(index);
+                }
+            },
+
+            triggerPresetUpload(index) {
+                this.activePresetUploadIndex = index;
+                const input = document.getElementById('upload-preset');
+                if (input) {
+                    input.value = '';
+                    input.click();
+                }
+            },
+
+            handlePresetFileUpload(event) {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                const index = this.activePresetUploadIndex;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const maxSide = 420;
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > h) {
+                            if (w > maxSide) { h *= maxSide / w; w = maxSide; }
+                        } else {
+                            if (h > maxSide) { w *= maxSide / h; h = maxSide; }
+                        }
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.84);
+                        AppState.presetPhotos[index] = compressedDataUrl;
+                        AppState.avatars[AppState.activeAvatar].photo = compressedDataUrl;
+                        StorageService.save(AppState);
+                        this.render();
+                        this.setState('celebrating', 2200);
+                        const label = FOTOS_CONFIG.momentos[index]?.label || 'Momento';
+                        UI.showToast(`Foto "${label}" adicionada e aplicada! 📸`, 'success');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            },
+
+            applyPresetPhoto(index) {
+                const selectedPhoto = AppState.presetPhotos[index] || PRESET_PHOTOS[index];
+                if (!selectedPhoto) return;
+                AppState.avatars[AppState.activeAvatar].photo = selectedPhoto;
+                StorageService.save(AppState);
+                this.render();
+                this.setState('celebrating', 1800);
+                const label = FOTOS_CONFIG.momentos[index]?.label || 'Momento';
+                UI.showToast(`Foto "${label}" aplicada!`, 'success');
+            },
+
+            setActiveAvatar(type) {
+                if (!AppState.avatars[type]) return;
+                AppState.activeAvatar = type;
+                StorageService.save(AppState);
+                this.render();
+                ProgressManager.renderAll();
+                const label = type === 'namorada' ? 'Meu Amor ♥' : 'Você';
+                UI.showToast(`Avatar alterado para: ${label}`, type === 'namorada' ? 'love' : 'info');
+            },
+
+            setState(newState, durationMs = 0) {
+                this.currentState = newState;
+                if (this.stateTimer) {
+                    clearTimeout(this.stateTimer);
+                    this.stateTimer = null;
+                }
+                this.render();
+
+                if (durationMs > 0) {
+                    this.stateTimer = setTimeout(() => {
+                        this.currentState = 'normal';
+                        this.render();
+                    }, durationMs);
+                }
+            },
+
+            triggerUploadForActive() {
+                this.triggerUpload(AppState.activeAvatar);
+            },
+
+            triggerUpload(target) {
+                const input = document.getElementById(`upload-${target}`);
+                if (input) input.click();
+            },
+
+            handleFileUpload(event, target) {
+                const file = event.target.files?.[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    // Redimensiona a imagem em canvas para economizar espaço no localStorage
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const maxSide = 420;
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > h) {
+                            if (w > maxSide) { h *= maxSide / w; w = maxSide; }
+                        } else {
+                            if (h > maxSide) { w *= maxSide / h; h = maxSide; }
+                        }
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.84);
+                        if (target === 'celebrate') {
+                            AppState.celebratePhoto = compressedDataUrl;
+                        } else if (target === 'appicon') {
+                            AppState.appIconPhoto = compressedDataUrl;
+                            PWAManager.updateAppIconManifest();
+                        } else {
+                            AppState.avatars[target].photo = compressedDataUrl;
+                            // Se ainda não definiu um ícone dedicado, sincroniza o ícone do app também
+                            if (!AppState.appIconPhoto || !AppState.appIconPhoto.startsWith('data:')) {
+                                AppState.appIconPhoto = compressedDataUrl;
+                                PWAManager.updateAppIconManifest();
+                            }
+                        }
+                        StorageService.save(AppState);
+                        this.render();
+                        UI.showToast('Foto atualizada com sucesso!', 'success');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            },
+
+            render() {
+                const active = this.getActiveData();
+                const mainImg = document.getElementById('main-avatar-img');
+                const frame = document.getElementById('avatar-frame');
+                const speechText = document.getElementById('avatar-speech-text');
+                const moodEmoji = document.getElementById('avatar-mood-emoji');
+                const statusDot = document.getElementById('status-dot');
+                const statusLabel = document.getElementById('status-label');
+                const focalPos = this.getFocalObjectPosition();
+
+                // Define imagem conforme o estado (comemorando pode usar a foto especial)
+                const photoToDisplay = (this.currentState === 'celebrating' && AppState.celebratePhoto)
+                    ? AppState.celebratePhoto
+                    : active.photo;
+
+                if (mainImg) {
+                    const fallbackActive = AppState.activeAvatar === 'namorada'
+                        ? FALLBACK_PLACEHOLDERS.namorada
+                        : FALLBACK_PLACEHOLDERS.voce;
+                    mainImg.onerror = () => { mainImg.onerror = null; mainImg.src = fallbackActive; };
+                    mainImg.src = photoToDisplay;
+                    mainImg.style.objectPosition = focalPos;
+                }
+
+                // Atualiza classes de animação e textos por estado
+                if (frame) {
+                    frame.classList.remove('avatar-idle', 'avatar-celebrating', 'avatar-reminding');
+                    if (this.currentState === 'celebrating') {
+                        frame.classList.add('avatar-celebrating');
+                        if (moodEmoji) moodEmoji.textContent = '🎉';
+                        if (speechText) speechText.textContent = AppState.activeAvatar === 'namorada'
+                            ? 'Arrasou, Meu Amor! Hidratação em dia!'
+                            : 'Mandou bem! Mais água pra conta!';
+                        if (statusDot) statusDot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+                        if (statusLabel) statusLabel.textContent = 'Comemorando';
+                    } else if (this.currentState === 'reminding') {
+                        frame.classList.add('avatar-reminding');
+                        if (moodEmoji) moodEmoji.textContent = '⏰';
+                        if (speechText) speechText.textContent = 'Ei! Hora de beber um copo d’água!';
+                        if (statusDot) statusDot.className = 'w-2 h-2 rounded-full bg-hydro-500 animate-pulse';
+                        if (statusLabel) statusLabel.textContent = 'Lembrando';
+                    } else {
+                        frame.classList.add('avatar-idle');
+                        if (moodEmoji) moodEmoji.textContent = AppState.activeAvatar === 'namorada' ? '💖' : '💧';
+                        if (speechText) speechText.textContent = AppState.activeAvatar === 'namorada'
+                            ? 'Acompanhando você hoje!'
+                            : 'Bora bater a meta de hoje!';
+                        if (statusDot) statusDot.className = 'w-2 h-2 rounded-full bg-emerald-500';
+                        if (statusLabel) statusLabel.textContent = 'Ativo';
+                    }
+                }
+
+                // Atualiza pills na Home
+                const pillVoce = document.getElementById('pill-avatar-voce');
+                const pillNamorada = document.getElementById('pill-avatar-namorada');
+                if (pillVoce && pillNamorada) {
+                    const nameVoce = AppState.avatars.voce.name || 'Você';
+                    const nameAmor = AppState.avatars.namorada.name || 'Meu Amor';
+                    pillVoce.textContent = nameVoce;
+                    pillNamorada.innerHTML = `<span>${nameAmor}</span><span class="text-love-500">♥</span>`;
+
+                    if (AppState.activeAvatar === 'voce') {
+                        pillVoce.className = 'px-3 py-1 rounded-full text-xs font-bold transition-all bg-white text-hydro-700 shadow-xs';
+                        pillNamorada.className = 'px-3 py-1 rounded-full text-xs font-bold transition-all text-slate-500 hover:text-slate-700 flex items-center gap-1';
+                    } else {
+                        pillNamorada.className = 'px-3 py-1 rounded-full text-xs font-bold transition-all bg-white text-love-500 shadow-xs flex items-center gap-1';
+                        pillVoce.className = 'px-3 py-1 rounded-full text-xs font-bold transition-all text-slate-500 hover:text-slate-700';
+                    }
+                }
+
+                // Sincroniza nomes nos cards do casal, progresso e ajustes
+                const nVoce = AppState.avatars.voce.name || 'Você';
+                const nAmor = AppState.avatars.namorada.name || 'Meu Amor';
+                const elMap = [
+                    ['couple-name-voce', nVoce],
+                    ['couple-name-namorada', `${nAmor} ♥`],
+                    ['prog-tab-voce', nVoce],
+                    ['prog-tab-namorada', `${nAmor} ♥`],
+                    ['settings-name-voce', nVoce],
+                    ['settings-name-namorada', `${nAmor} ♥`]
+                ];
+                elMap.forEach(([id, txt]) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = txt;
+                });
+
+                const quickPhotoLabel = document.getElementById('quick-photo-btn-label');
+                if (quickPhotoLabel) {
+                    quickPhotoLabel.textContent = AppState.activeAvatar === 'namorada'
+                        ? 'Escolher foto do Meu Amor'
+                        : 'Escolher sua foto da galeria';
+                }
+
+                // Atualiza miniaturas na tela de Ajustes e Onboarding
+                const imgVoce = document.getElementById('settings-img-voce');
+                const imgNamorada = document.getElementById('settings-img-namorada');
+                const imgCelebrate = document.getElementById('settings-img-celebrate');
+                const imgAppIcon = document.getElementById('settings-img-appicon');
+                if (imgVoce) {
+                    imgVoce.onerror = () => { imgVoce.onerror = null; imgVoce.src = FALLBACK_PLACEHOLDERS.voce; };
+                    imgVoce.src = AppState.avatars.voce.photo;
+                    imgVoce.style.objectPosition = focalPos;
+                }
+                if (imgNamorada) {
+                    imgNamorada.onerror = () => { imgNamorada.onerror = null; imgNamorada.src = FALLBACK_PLACEHOLDERS.namorada; };
+                    imgNamorada.src = AppState.avatars.namorada.photo;
+                    imgNamorada.style.objectPosition = focalPos;
+                }
+                if (imgCelebrate) {
+                    imgCelebrate.onerror = () => { imgCelebrate.onerror = null; imgCelebrate.src = FALLBACK_PLACEHOLDERS.comemorando; };
+                    imgCelebrate.src = AppState.celebratePhoto || DEFAULT_AVATARS.celebrate;
+                    imgCelebrate.style.objectPosition = focalPos;
+                }
+                if (imgAppIcon) {
+                    const iconSrc = (AppState.appIconPhoto && AppState.appIconPhoto.startsWith('data:'))
+                        ? AppState.appIconPhoto
+                        : (AppState.avatars.voce.photo.startsWith('data:') ? AppState.avatars.voce.photo : FALLBACK_PLACEHOLDERS.comemorando);
+                    imgAppIcon.onerror = () => { imgAppIcon.onerror = null; imgAppIcon.src = FALLBACK_PLACEHOLDERS.comemorando; };
+                    imgAppIcon.src = iconSrc;
+                }
+
+                const obVoce = document.getElementById('ob-img-voce');
+                const obNamorada = document.getElementById('ob-img-namorada');
+                if (obVoce) {
+                    obVoce.onerror = () => { obVoce.onerror = null; obVoce.src = FALLBACK_PLACEHOLDERS.voce; };
+                    obVoce.src = AppState.avatars.voce.photo;
+                    obVoce.style.objectPosition = focalPos;
+                }
+                if (obNamorada) {
+                    obNamorada.onerror = () => { obNamorada.onerror = null; obNamorada.src = FALLBACK_PLACEHOLDERS.namorada; };
+                    obNamorada.src = AppState.avatars.namorada.photo;
+                    obNamorada.style.objectPosition = focalPos;
+                }
+
+                // Atualiza thumbnails da galeria rápida
+                AppState.presetPhotos.forEach((src, idx) => {
+                    const thumb = document.getElementById(`preset-thumb-${idx}`);
+                    const overlay = document.getElementById(`preset-overlay-${idx}`);
+                    const btn = document.getElementById(`preset-btn-${idx}`);
+                    const hasCustomPhoto = typeof src === 'string' && src.startsWith('data:');
+
+                    if (thumb) {
+                        thumb.onerror = () => { thumb.onerror = null; thumb.src = FALLBACK_PLACEHOLDERS.momentos[idx]; };
+                        thumb.src = src;
+                        thumb.style.objectPosition = focalPos;
+                    }
+                    if (overlay) {
+                        overlay.classList.toggle('hidden', hasCustomPhoto);
+                    }
+                    if (btn) {
+                        if (active.photo === src && hasCustomPhoto) {
+                            btn.className = 'w-full h-full rounded-xl overflow-hidden border-2 border-hydro-500 ring-2 ring-hydro-200 transition relative group';
+                        } else {
+                            btn.className = 'w-full h-full rounded-xl overflow-hidden border-2 border-slate-200 hover:border-hydro-500 transition relative group';
+                        }
+                    }
+                });
+
+                // Atualiza estado visual dos botões de enquadramento focal
+                const focalLabels = { left: 'Foco Você', center: 'Casal', right: 'Meu Amor' };
+                const focalLabelEl = document.getElementById('focal-label');
+                if (focalLabelEl) focalLabelEl.textContent = focalLabels[AppState.focalPoint] || 'Casal';
+
+                document.querySelectorAll('.focal-btn').forEach(btn => {
+                    const isSelected = btn.dataset.focal === AppState.focalPoint;
+                    btn.className = isSelected
+                        ? 'focal-btn py-1.5 px-2 rounded-xl border-2 border-hydro-500 bg-hydro-50 text-[11px] font-bold text-hydro-700 transition'
+                        : 'focal-btn py-1.5 px-2 rounded-xl border border-slate-200 bg-white text-[11px] font-semibold text-slate-600 hover:bg-slate-50 transition';
+                });
+
+                const cardVoce = document.getElementById('settings-card-voce');
+                const cardNamorada = document.getElementById('settings-card-namorada');
+                if (cardVoce && cardNamorada) {
+                    if (AppState.activeAvatar === 'voce') {
+                        cardVoce.className = 'cursor-pointer rounded-2xl p-3 border-2 border-hydro-500 bg-white flex flex-col items-center text-center transition relative shadow-xs';
+                        cardNamorada.className = 'cursor-pointer rounded-2xl p-3 border border-slate-200 bg-white/70 flex flex-col items-center text-center transition relative';
+                    } else {
+                        cardNamorada.className = 'cursor-pointer rounded-2xl p-3 border-2 border-love-500 bg-white flex flex-col items-center text-center transition relative shadow-xs';
+                        cardVoce.className = 'cursor-pointer rounded-2xl p-3 border border-slate-200 bg-white/70 flex flex-col items-center text-center transition relative';
+                    }
+                }
+            }
+        };
+
+        /* ---------------------------------------------------------
+           MÓDULO: PWAManager (Ícone do App na Tela Inicial do Celular)
+        --------------------------------------------------------- */
+        const PWAManager = {
+            deferredPrompt: null,
+            manifestUrl: null,
+
+            init() {
+                this.registerServiceWorker();
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    this.deferredPrompt = e;
+                });
+                this.updateAppIconManifest();
+            },
+
+            registerServiceWorker() {
+                if (!('serviceWorker' in navigator)) return;
+                try {
+                    const swCode = `
+                        const CACHE_NAME = 'hydrolove-v1';
+                        self.addEventListener('install', (e) => { self.skipWaiting(); });
+                        self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
+                        self.addEventListener('fetch', (e) => {
+                            if (e.request.method !== 'GET') return;
+                            e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+                        });
+                        self.addEventListener('notificationclick', (e) => {
+                            e.notification.close();
+                            e.waitUntil(self.clients.matchAll({ type: 'window' }).then((clients) => {
+                                if (clients.length > 0) return clients[0].focus();
+                                return self.clients.openWindow('./');
+                            }));
+                        });
+                    `;
+                    const blob = new Blob([swCode], { type: 'application/javascript' });
+                    const swUrl = URL.createObjectURL(blob);
+                    navigator.serviceWorker.register(swUrl).catch(() => {});
+                } catch (e) {}
+            },
+
+            generateSquareIconDataUrl(sourceUrl, size = 512) {
+                return new Promise((resolve) => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+
+                    const drawFallback = () => {
+                        const grad = ctx.createLinearGradient(0, 0, size, size);
+                        grad.addColorStop(0, '#a78bfa');
+                        grad.addColorStop(1, '#0ea5e9');
+                        ctx.fillStyle = grad;
+                        ctx.fillRect(0, 0, size, size);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = `bold ${Math.round(size * 0.42)}px sans-serif`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText('💧', size / 2, size / 2);
+                        resolve(canvas.toDataURL('image/png'));
+                    };
+
+                    if (!sourceUrl) {
+                        drawFallback();
+                        return;
+                    }
+
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        const scale = Math.max(size / img.width, size / img.height);
+                        const drawW = img.width * scale;
+                        const drawH = img.height * scale;
+                        const offsetX = (size - drawW) / 2;
+                        const offsetY = (size - drawH) / 2;
+                        ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+                        resolve(canvas.toDataURL('image/png'));
+                    };
+                    img.onerror = drawFallback;
+                    img.src = sourceUrl;
+                });
+            },
+
+            async updateAppIconManifest() {
+                const candidate = (AppState.appIconPhoto && AppState.appIconPhoto.startsWith('data:'))
+                    ? AppState.appIconPhoto
+                    : (AppState.avatars.voce.photo.startsWith('data:') ? AppState.avatars.voce.photo : null);
+
+                const icon192 = await this.generateSquareIconDataUrl(candidate, 192);
+                const icon512 = await this.generateSquareIconDataUrl(candidate, 512);
+
+                const appleLink = document.getElementById('pwa-apple-icon');
+                const favLink = document.getElementById('pwa-favicon');
+                const manifestLink = document.getElementById('pwa-manifest');
+
+                if (appleLink) appleLink.href = icon512;
+                if (favLink) favLink.href = icon192;
+
+                const manifestObj = {
+                    name: 'HydroLove • Beba Água',
+                    short_name: 'HydroLove',
+                    description: 'Monitor de hidratação do casal com lembretes e avatares.',
+                    start_url: './',
+                    display: 'standalone',
+                    background_color: '#ffffff',
+                    theme_color: '#0ea5e9',
+                    icons: [
+                        { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+                        { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+                    ]
+                };
+
+                if (this.manifestUrl) URL.revokeObjectURL(this.manifestUrl);
+                const blob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+                this.manifestUrl = URL.createObjectURL(blob);
+                if (manifestLink) manifestLink.href = this.manifestUrl;
+            },
+
+            async promptInstall() {
+                await this.updateAppIconManifest();
+                if (this.deferredPrompt) {
+                    this.deferredPrompt.prompt();
+                    const choice = await this.deferredPrompt.userChoice;
+                    if (choice.outcome === 'accepted') {
+                        UI.showToast('Instalando HydroLove com seu avatar! 📲', 'success');
+                    }
+                    this.deferredPrompt = null;
+                } else {
+                    UI.showToast('No navegador do celular, toque em Compartilhar / Menu (⋮) → "Adicionar à tela inicial"!', 'info');
+                }
+            }
+        };
+
+        /* ---------------------------------------------------------
+           MÓDULO: progresso.js (ProgressManager)
+           Gerencia ingestão diária, gráfico 7 dias, sequência, placar do casal e conquistas
+        --------------------------------------------------------- */
+        const ProgressManager = {
+            formatLiters(ml) {
+                return `${(ml / 1000).toFixed(1).replace('.', ',')} L`;
+            },
+
+            getTodayTotalMl(profile = AppState.activeAvatar) {
+                const today = StorageService.getTodayKey();
+                const list = AppState.histories[profile]?.[today] || [];
+                return list.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+            },
+
+            addIntake(amountMl, profile = AppState.activeAvatar) {
+                const today = StorageService.getTodayKey();
+                if (!AppState.histories[profile]) AppState.histories[profile] = {};
+                if (!AppState.histories[profile][today]) AppState.histories[profile][today] = [];
+                AppState.histories[profile][today].push({
+                    amount: amountMl,
+                    timestamp: Date.now()
+                });
+                StorageService.save(AppState);
+            },
+
+            removeLastIntake(profile = AppState.activeAvatar) {
+                const today = StorageService.getTodayKey();
+                const list = AppState.histories[profile]?.[today];
+                if (!list || list.length === 0) return null;
+                const removed = list.pop();
+                StorageService.save(AppState);
+                return removed;
+            },
+
+            getLast7DaysData(profile = AppState.activeAvatar) {
+                const days = [];
+                const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                const now = new Date();
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date(now);
+                    d.setDate(now.getDate() - i);
+                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    const entries = AppState.histories[profile]?.[key] || [];
+                    const totalMl = entries.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+                    days.push({
+                        key,
+                        label: i === 0 ? 'Hoje' : dayNames[d.getDay()],
+                        totalMl,
+                        isToday: i === 0
+                    });
+                }
+                return days;
+            },
+
+            calculateStreak(profile = AppState.activeAvatar) {
+                const goal = AppState.settings.dailyGoalMl;
+                let streak = 0;
+                const now = new Date();
+                for (let i = 0; i < 60; i++) {
+                    const d = new Date(now);
+                    d.setDate(now.getDate() - i);
+                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    const entries = AppState.histories[profile]?.[key] || [];
+                    const total = entries.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+                    if (total >= goal) {
+                        streak++;
+                    } else if (i === 0) {
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                return streak;
+            },
+
+            renderAll() {
+                const active = AppState.activeAvatar;
+                const goal = AppState.settings.dailyGoalMl;
+                const totalMl = this.getTodayTotalMl(active);
+                const pct = Math.min(100, Math.round((totalMl / goal) * 100));
+
+                // 1. Atualiza leitura na tela Início
+                const curEl = document.getElementById('current-liters-text');
+                const goalEl = document.getElementById('goal-liters-text');
+                const pctEl = document.getElementById('goal-percent-text');
+                const barEl = document.getElementById('linear-progress-bar');
+                const ringEl = document.getElementById('progress-ring');
+
+                if (curEl) curEl.textContent = this.formatLiters(totalMl);
+                if (goalEl) goalEl.textContent = this.formatLiters(goal);
+                if (pctEl) pctEl.textContent = `${pct}% da meta de hoje`;
+                if (barEl) barEl.style.width = `${pct}%`;
+
+                if (ringEl) {
+                    const circumference = 615.75;
+                    const offset = circumference - (pct / 100) * circumference;
+                    ringEl.style.strokeDashoffset = offset;
+                }
+
+                // 2. Atualiza Placar do Casal na Home
+                this.renderCoupleCards();
+
+                // 3. Atualiza abas na tela Progresso
+                const tabVoce = document.getElementById('prog-tab-voce');
+                const tabNamorada = document.getElementById('prog-tab-namorada');
+                if (tabVoce && tabNamorada) {
+                    if (active === 'voce') {
+                        tabVoce.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold transition bg-white text-hydro-700 shadow-xs';
+                        tabNamorada.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold transition text-slate-500';
+                    } else {
+                        tabNamorada.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold transition bg-white text-love-500 shadow-xs';
+                        tabVoce.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold transition text-slate-500';
+                    }
+                }
+
+                // 4. Atualiza Gráfico dos Últimos 7 Dias
+                this.renderWeeklyChart(active);
+
+                // 5. Atualiza Sequência, Média Semanal e Conquistas
+                const streak = this.calculateStreak(active);
+                const streakEl = document.getElementById('streak-days-text');
+                if (streakEl) streakEl.textContent = `${streak} ${streak === 1 ? 'dia' : 'dias'}`;
+
+                const last7 = this.getLast7DaysData(active);
+                const avgMl = last7.reduce((s, d) => s + d.totalMl, 0) / 7;
+                const avgEl = document.getElementById('weekly-avg-text');
+                if (avgEl) avgEl.textContent = this.formatLiters(avgMl);
+
+                this.renderAchievements(active, totalMl, streak);
+            },
+
+            renderCoupleCards() {
+                const goal = AppState.settings.dailyGoalMl;
+                const focalPos = AvatarManager.getFocalObjectPosition();
+
+                ['voce', 'namorada'].forEach(profile => {
+                    const ml = this.getTodayTotalMl(profile);
+                    const pct = Math.min(100, Math.round((ml / goal) * 100));
+                    const isSelected = AppState.activeAvatar === profile;
+
+                    const card = document.getElementById(`couple-card-${profile}`);
+                    const img = document.getElementById(`couple-mini-${profile}`);
+                    const pctEl = document.getElementById(`couple-pct-${profile}`);
+                    const barEl = document.getElementById(`couple-bar-${profile}`);
+                    const mlEl = document.getElementById(`couple-ml-${profile}`);
+
+                    if (card) {
+                        if (isSelected) {
+                            card.className = profile === 'voce'
+                                ? 'p-2 rounded-xl border-2 border-hydro-500 bg-white shadow-xs transition cursor-pointer flex items-center gap-2'
+                                : 'p-2 rounded-xl border-2 border-love-500 bg-white shadow-xs transition cursor-pointer flex items-center gap-2';
+                        } else {
+                            card.className = 'p-2 rounded-xl border border-slate-200 bg-white/70 hover:bg-white transition cursor-pointer flex items-center gap-2';
+                        }
+                    }
+
+                    if (img) {
+                        const fallback = profile === 'namorada' ? FALLBACK_PLACEHOLDERS.namorada : FALLBACK_PLACEHOLDERS.voce;
+                        img.onerror = () => { img.onerror = null; img.src = fallback; };
+                        img.src = AppState.avatars[profile].photo;
+                        img.style.objectPosition = focalPos;
+                    }
+                    if (pctEl) pctEl.textContent = `${pct}%`;
+                    if (barEl) barEl.style.width = `${pct}%`;
+                    if (mlEl) mlEl.textContent = `${this.formatLiters(ml)} / ${this.formatLiters(goal)}`;
+                });
+            },
+
+            renderWeeklyChart(profile) {
+                const container = document.getElementById('weekly-chart-bars');
+                const goalSub = document.getElementById('chart-goal-subtitle');
+                const todayBadge = document.getElementById('chart-today-badge');
+                const goal = AppState.settings.dailyGoalMl;
+
+                if (goalSub) goalSub.textContent = `Meta diária: ${this.formatLiters(goal)}`;
+                if (todayBadge) todayBadge.textContent = `Hoje: ${this.formatLiters(this.getTodayTotalMl(profile))}`;
+                if (!container) return;
+
+                const days = this.getLast7DaysData(profile);
+                const maxVal = Math.max(goal * 1.33, ...days.map(d => d.totalMl));
+
+                const goalLine = document.getElementById('chart-goal-line');
+                if (goalLine) {
+                    const linePct = Math.min(92, Math.round((goal / maxVal) * 100));
+                    goalLine.style.bottom = `${linePct}%`;
+                }
+
+                container.innerHTML = days.map(day => {
+                    const heightPct = Math.max(6, Math.min(100, Math.round((day.totalMl / maxVal) * 100)));
+                    const hitGoal = day.totalMl >= goal;
+                    const barColor = hitGoal
+                        ? 'bg-gradient-to-t from-emerald-500 to-teal-400'
+                        : (day.isToday ? 'bg-gradient-to-t from-hydro-600 to-sky-400' : 'bg-hydro-200');
+
+                    return `
+                        <div class="flex-1 h-full flex flex-col items-center justify-end gap-1.5">
+                            <span class="text-[10px] font-bold text-slate-500">${day.totalMl > 0 ? (day.totalMl / 1000).toFixed(1).replace('.', ',') : ''}</span>
+                            <div class="w-full max-w-[26px] ${barColor} rounded-t-xl transition-all duration-500" style="height: ${heightPct}%"></div>
+                            <span class="text-[10px] font-bold ${day.isToday ? 'text-hydro-700' : 'text-slate-400'}">${day.label}</span>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            renderAchievements(profile, todayMl, streak) {
+                const grid = document.getElementById('achievements-grid');
+                const countEl = document.getElementById('achievements-count');
+                if (!grid) return;
+
+                const goal = AppState.settings.dailyGoalMl;
+                const voceToday = this.getTodayTotalMl('voce');
+                const namoradaToday = this.getTodayTotalMl('namorada');
+
+                const badges = [
+                    {
+                        title: 'Primeiro Gole',
+                        desc: 'Registrou água hoje',
+                        icon: '💧',
+                        unlocked: todayMl > 0
+                    },
+                    {
+                        title: 'Meta 100%',
+                        desc: 'Bateu a meta diária',
+                        icon: '🏆',
+                        unlocked: todayMl >= goal
+                    },
+                    {
+                        title: 'Dupla Hidratada',
+                        desc: 'Você e Meu Amor beberam hoje',
+                        icon: '💖',
+                        unlocked: voceToday > 0 && namoradaToday > 0
+                    },
+                    {
+                        title: 'Foco Total',
+                        desc: '3 dias seguidos na meta',
+                        icon: '🔥',
+                        unlocked: streak >= 3
+                    }
+                ];
+
+                const unlockedCount = badges.filter(b => b.unlocked).length;
+                if (countEl) countEl.textContent = `${unlockedCount}/${badges.length} desbloqueadas`;
+
+                grid.innerHTML = badges.map(b => `
+                    <div class="p-3.5 rounded-2xl border ${b.unlocked ? 'bg-white border-hydro-200 shadow-xs' : 'bg-slate-50 border-slate-200/70 opacity-60'} flex items-start gap-2.5">
+                        <span class="text-xl">${b.unlocked ? b.icon : '🔒'}</span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-extrabold text-slate-800 truncate">${b.title}</p>
+                            <p class="text-[10px] text-slate-500 leading-tight mt-0.5">${b.desc}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        };
+
+        /* ---------------------------------------------------------
+           MÓDULO: reminders.js (ReminderManager)
+           Gerencia agendamento, banner estilo WhatsApp, som e Notification API com foto circular
+        --------------------------------------------------------- */
+        const ReminderManager = {
+            checkTimer: null,
+            snoozeUntil: null,
+            lastTriggeredMinute: null,
+
+            init() {
+                this.updateNextReminderUI();
+                this.updateNotifStatusUI();
+
+                if (this.checkTimer) clearInterval(this.checkTimer);
+                this.checkTimer = setInterval(() => this.checkSchedule(), 15000);
+            },
+
+            toggleNotifications(enabled) {
+                AppState.settings.notificationsEnabled = enabled;
+                StorageService.save(AppState);
+                this.updateNextReminderUI();
+                this.updateNotifStatusUI();
+                UI.showToast(enabled ? 'Lembretes ativados! 🔔' : 'Lembretes pausados.', 'info');
+            },
+
+            updateNotifStatusUI() {
+                const statusEl = document.getElementById('notif-permission-status');
+                const btnEl = document.getElementById('btn-enable-notif');
+                if (!statusEl) return;
+
+                if (!('Notification' in window)) {
+                    statusEl.textContent = 'Notificação interna estilo WhatsApp ativa';
+                    if (btnEl) btnEl.classList.add('hidden');
+                    return;
+                }
+
+                if (Notification.permission === 'granted') {
+                    statusEl.textContent = 'Push nativo + banner estilo WhatsApp ativos ✓';
+                    if (btnEl) {
+                        btnEl.textContent = 'Ativo ✓';
+                        btnEl.className = 'px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200';
+                    }
+                } else if (Notification.permission === 'denied') {
+                    statusEl.textContent = 'Push bloqueado no navegador (banner interno ativo)';
+                } else {
+                    statusEl.textContent = 'Clique em Ativar Push para receber fora do app';
+                }
+            },
+
+            async requestNotificationPermission() {
+                if (!('Notification' in window)) {
+                    UI.showToast('Seu navegador usará o banner estilo WhatsApp integrado!', 'info');
+                    return;
+                }
+                try {
+                    const perm = await Notification.requestPermission();
+                    this.updateNotifStatusUI();
+                    if (perm === 'granted') {
+                        UI.showToast('Notificações Push ativadas! 🔔', 'success');
+                        this.triggerReminder(true);
+                    } else {
+                        UI.showToast('Permissão não concedida; o alerta interno continuará funcionando.', 'info');
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            },
+
+            parseTimeToMinutes(hhmm) {
+                const [h, m] = (hhmm || '08:00').split(':').map(Number);
+                return (h * 60) + (m || 0);
+            },
+
+            formatMinutesToHHMM(totalMins) {
+                const wrapped = ((totalMins % 1440) + 1440) % 1440;
+                const h = Math.floor(wrapped / 60);
+                const m = wrapped % 60;
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            },
+
+            updateNextReminderUI() {
+                const el = document.getElementById('next-reminder-text');
+                if (!el) return;
+
+                if (!AppState.settings.notificationsEnabled) {
+                    el.textContent = 'Lembretes pausados';
+                    return;
+                }
+
+                const now = new Date();
+                if (this.snoozeUntil && this.snoozeUntil > now.getTime()) {
+                    const diffMin = Math.max(1, Math.ceil((this.snoozeUntil - now.getTime()) / 60000));
+                    el.textContent = `Adiado: em ${diffMin} min`;
+                    return;
+                }
+
+                const nowMins = now.getHours() * 60 + now.getMinutes();
+                const startMins = this.parseTimeToMinutes(AppState.settings.startTime);
+                const endMins = this.parseTimeToMinutes(AppState.settings.endTime);
+                const step = Math.max(15, Number(AppState.settings.intervalMinutes) || 60);
+
+                if (nowMins < startMins) {
+                    el.textContent = `Próximo: ${AppState.settings.startTime}`;
+                    return;
+                }
+
+                let next = startMins;
+                while (next <= nowMins && next <= endMins) {
+                    next += step;
+                }
+
+                el.textContent = next <= endMins
+                    ? `Próximo: ${this.formatMinutesToHHMM(next)}`
+                    : `Amanhã às ${AppState.settings.startTime}`;
+            },
+
+            checkSchedule() {
+                this.updateNextReminderUI();
+                if (!AppState.settings.notificationsEnabled) return;
+
+                const now = new Date();
+                const minuteStamp = `${now.getHours()}:${now.getMinutes()}`;
+                if (this.lastTriggeredMinute === minuteStamp) return;
+
+                if (this.snoozeUntil && now.getTime() >= this.snoozeUntil) {
+                    this.snoozeUntil = null;
+                    this.lastTriggeredMinute = minuteStamp;
+                    this.triggerReminder(false);
+                    return;
+                }
+
+                const nowMins = now.getHours() * 60 + now.getMinutes();
+                const startMins = this.parseTimeToMinutes(AppState.settings.startTime);
+                const endMins = this.parseTimeToMinutes(AppState.settings.endTime);
+                const step = Math.max(15, Number(AppState.settings.intervalMinutes) || 60);
+
+                if (nowMins >= startMins && nowMins <= endMins && ((nowMins - startMins) % step === 0)) {
+                    this.lastTriggeredMinute = minuteStamp;
+                    this.triggerReminder(false);
+                }
+            },
+
+            playWhatsAppTone() {
+                try {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioCtx) return;
+                    const ctx = new AudioCtx();
+                    const notes = [880, 1174.66];
+                    notes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.11);
+                        gain.gain.setValueAtTime(0.001, ctx.currentTime + idx * 0.11);
+                        gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + idx * 0.11 + 0.02);
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.11 + 0.22);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(ctx.currentTime + idx * 0.11);
+                        osc.stop(ctx.currentTime + idx * 0.11 + 0.24);
+                    });
+                } catch (e) {}
+            },
+
+            buildCircularAvatarIcon(photoUrl) {
+                return new Promise((resolve) => {
+                    const size = 192;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
+                        ctx.closePath();
+                        ctx.clip();
+
+                        const scale = Math.max(size / img.width, size / img.height);
+                        const w = img.width * scale;
+                        const h = img.height * scale;
+                        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+                        ctx.restore();
+
+                        ctx.lineWidth = 8;
+                        ctx.strokeStyle = '#25D366';
+                        ctx.beginPath();
+                        ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
+                        ctx.stroke();
+
+                        resolve(canvas.toDataURL('image/png'));
+                    };
+                    img.onerror = () => resolve(FALLBACK_PLACEHOLDERS.namorada);
+                    img.src = photoUrl;
+                });
+            },
+
+            async triggerReminder(isManualTest = false) {
+                // Remetente cruzado: se você está ativo, Meu Amor manda mensagem (e vice-versa)
+                const senderKey = AppState.activeAvatar === 'voce' ? 'namorada' : 'voce';
+                const senderName = senderKey === 'namorada'
+                    ? `${AppState.avatars.namorada.name} ♥`
+                    : AppState.avatars.voce.name;
+                const senderPhoto = AppState.avatars[senderKey].photo;
+
+                const messages = [
+                    'Ei amor, já bebeu água agora? Bora bater nossa meta! 💧❤️',
+                    'Passando pra lembrar você de tomar um copo d’água bem gelado! 🥤✨',
+                    'Hora de se hidratar! Não esquece de registrar aqui pra mim 💙'
+                ];
+                const chosenMsg = messages[Math.floor(Math.random() * messages.length)];
+
+                AvatarManager.setState('reminding', 8000);
+                this.playWhatsAppTone();
+
+                // Atualiza e exibe o banner estilo WhatsApp no topo
+                const banner = document.getElementById('reminder-banner');
+                const bannerImg = document.getElementById('banner-avatar-img');
+                const bannerSender = document.getElementById('banner-sender-name');
+                const bannerMsg = document.getElementById('banner-message');
+                const bannerTime = document.getElementById('banner-time-text');
+                const bannerCup = document.getElementById('banner-cup-ml');
+
+                if (bannerImg) {
+                    const fallback = senderKey === 'namorada' ? FALLBACK_PLACEHOLDERS.namorada : FALLBACK_PLACEHOLDERS.voce;
+                    bannerImg.onerror = () => { bannerImg.onerror = null; bannerImg.src = fallback; };
+                    bannerImg.src = senderPhoto;
+                    bannerImg.style.objectPosition = AvatarManager.getFocalObjectPosition();
+                }
+                if (bannerSender) bannerSender.textContent = senderName;
+                if (bannerMsg) bannerMsg.textContent = chosenMsg;
+                if (bannerTime) {
+                    const now = new Date();
+                    bannerTime.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                }
+                if (bannerCup) bannerCup.textContent = AppState.selectedCupSize;
+                if (banner) banner.classList.remove('hidden');
+
+                // Dispara Push nativo do navegador se permitido
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    try {
+                        const iconData = await this.buildCircularAvatarIcon(senderPhoto);
+                        const notif = new Notification(senderName, {
+                            body: chosenMsg,
+                            icon: iconData,
+                            badge: iconData,
+                            tag: 'hydrolove-reminder'
+                        });
+                        notif.onclick = () => {
+                            window.focus();
+                            notif.close();
+                        };
+                    } catch (e) {}
+                } else if (isManualTest) {
+                    UI.showToast('Lembrete estilo WhatsApp exibido no topo! 💬', 'info');
+                }
+            },
+
+            confirmDrinkFromReminder() {
+                this.dismissBanner();
+                App.drinkWater();
+            },
+
+            snoozeReminder() {
+                this.snoozeUntil = Date.now() + 10 * 60 * 1000;
+                this.dismissBanner();
+                AvatarManager.setState('normal');
+                this.updateNextReminderUI();
+                UI.showToast('Lembrete adiado por 10 minutos ⏰', 'info');
+            },
+
+            dismissBanner() {
+                const banner = document.getElementById('reminder-banner');
+                if (banner) banner.classList.add('hidden');
+                if (AvatarManager.currentState === 'reminding') {
+                    AvatarManager.setState('normal');
+                }
+            }
+        };
+
+        /* ---------------------------------------------------------
+           MÓDULO: app.js (Controlador Principal e Eventos)
+        --------------------------------------------------------- */
+        const App = {
+            onboardingSelectedAvatar: 'voce',
+
+            init() {
+                // Sincroniza o estado padrão com "Meu Amor" caso ainda esteja com o texto antigo
+                if (AppState?.avatars?.namorada?.name === 'Namorada') {
+                    AppState.avatars.namorada.name = 'Meu Amor';
+                }
+
+                // Sincroniza inputs da tela de Ajustes com AppState
+                this.syncSettingsInputs();
+
+                // Renderiza componentes iniciais
+                AvatarManager.render();
+                ProgressManager.renderAll();
+                ReminderManager.init();
+                PWAManager.init();
+                this.selectCupSize(AppState.selectedCupSize, true);
+
+                // Inicializa ícones Lucide
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+
+                // Fluxo: "Abrir o app pela 1ª vez"
+                if (!AppState.onboarded) {
+                    this.openOnboarding();
+                }
+            },
+
+            navigate(screenId) {
+                const screens = ['inicio', 'progresso', 'ajustes'];
+                screens.forEach(id => {
+                    const el = document.getElementById(`screen-${id}`);
+                    if (el) {
+                        el.classList.toggle('hidden', id !== screenId);
+                    }
+                });
+
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    const isTarget = btn.dataset.nav === screenId;
+                    btn.className = isTarget
+                        ? 'nav-btn flex flex-col items-center gap-1 py-1 px-4 rounded-2xl text-hydro-600 font-bold transition'
+                        : 'nav-btn flex flex-col items-center gap-1 py-1 px-4 rounded-2xl text-slate-400 hover:text-slate-600 font-medium transition';
+                });
+
+                if (screenId === 'progresso') {
+                    ProgressManager.renderAll();
+                }
+            },
+
+            selectCupSize(ml, silent = false) {
+                AppState.selectedCupSize = ml;
+                StorageService.save(AppState);
+
+                document.querySelectorAll('.cup-btn').forEach(btn => {
+                    const btnMl = Number(btn.dataset.cup);
+                    if (btnMl === ml) {
+                        btn.className = 'cup-btn flex-1 py-2 px-2 rounded-2xl border-2 border-hydro-500 bg-hydro-50 text-xs font-bold text-hydro-700 transition flex flex-col items-center gap-0.5 shadow-xs';
+                    } else {
+                        btn.className = 'cup-btn flex-1 py-2 px-2 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-hydro-50 text-xs font-bold text-slate-700 transition flex flex-col items-center gap-0.5';
+                    }
+                });
+
+                const mainLabel = document.getElementById('main-drink-btn-label');
+                if (mainLabel) {
+                    const who = AppState.activeAvatar === 'namorada'
+                        ? `${AppState.avatars.namorada.name} ♥`
+                        : AppState.avatars.voce.name;
+                    mainLabel.textContent = `Bebi água (+${ml} ml) • ${who}`;
+                }
+
+                if (!silent) {
+                    UI.showToast(`Porção selecionada: ${ml} ml`, 'info');
+                }
+            },
+
+            openCustomAmountModal() {
+                document.getElementById('custom-amount-modal').classList.remove('hidden');
+            },
+
+            confirmCustomAmount() {
+                const input = document.getElementById('custom-ml-input');
+                const val = Math.max(50, Math.min(2000, Number(input.value) || 250));
+                document.getElementById('custom-amount-modal').classList.add('hidden');
+                this.selectCupSize(val);
+            },
+
+            drinkWater() {
+                const amount = AppState.selectedCupSize;
+                const activeProfile = AppState.activeAvatar;
+                const beforeTotal = ProgressManager.getTodayTotalMl(activeProfile);
+                const goal = AppState.settings.dailyGoalMl;
+
+                // 1. Registra a quantidade
+                ProgressManager.addIntake(amount, activeProfile);
+                const afterTotal = ProgressManager.getTodayTotalMl(activeProfile);
+
+                // 2. Avatar comemora e progresso atualiza
+                AvatarManager.setState('celebrating', 2400);
+                ProgressManager.renderAll();
+
+                // Esconde banner de lembrete se estava aberto
+                const banner = document.getElementById('reminder-banner');
+                if (banner) banner.classList.add('hidden');
+
+                // Dispara confetes leves
+                if (window.confetti) {
+                    confetti({
+                        particleCount: afterTotal >= goal && beforeTotal < goal ? 90 : 30,
+                        spread: 60,
+                        origin: { y: 0.65 }
+                    });
+                }
+
+                // 3. Verifica: "Meta do dia atingida?"
+                const todayKey = StorageService.getTodayKey();
+                if (afterTotal >= goal && AppState.goalCelebratedDate[activeProfile] !== todayKey) {
+                    AppState.goalCelebratedDate[activeProfile] = todayKey;
+                    StorageService.save(AppState);
+                    this.openGoalSummaryModal();
+                } else {
+                    const whoLabel = activeProfile === 'namorada' ? `${AppState.avatars.namorada.name} ♥` : AppState.avatars.voce.name;
+                    UI.showToast(`+${amount} ml registrados para ${whoLabel}! 💧`, 'success');
+                }
+            },
+
+            undoLastDrink() {
+                const activeProfile = AppState.activeAvatar;
+                const removed = ProgressManager.removeLastIntake(activeProfile);
+                if (!removed) {
+                    UI.showToast('Nenhum registro hoje para desfazer.', 'info');
+                    return;
+                }
+                ProgressManager.renderAll();
+                AvatarManager.setState('normal');
+                UI.showToast(`Removido registro de ${removed.amount} ml.`, 'info');
+            },
+
+            openGoalSummaryModal() {
+                const activeProfile = AppState.activeAvatar;
+                const modal = document.getElementById('goal-summary-modal');
+                const img = document.getElementById('summary-celebrate-img');
+                const totalEl = document.getElementById('summary-total-liters');
+                const streakEl = document.getElementById('summary-streak-count');
+                const descEl = document.getElementById('summary-modal-desc');
+
+                if (img) {
+                    img.src = AppState.celebratePhoto || AvatarManager.getActiveData().photo;
+                    img.style.objectPosition = AvatarManager.getFocalObjectPosition();
+                }
+                if (totalEl) totalEl.textContent = ProgressManager.formatLiters(ProgressManager.getTodayTotalMl(activeProfile));
+                if (streakEl) {
+                    const s = ProgressManager.calculateStreak(activeProfile);
+                    streakEl.textContent = `${s} ${s === 1 ? 'dia' : 'dias'} 🔥`;
+                }
+                if (descEl) {
+                    const who = activeProfile === 'namorada' ? `${AppState.avatars.namorada.name} ♥` : 'Você';
+                    descEl.textContent = `${who} alcançou 100% da meta diária de hidratação e manteve a sequência ativa!`;
+                }
+                if (modal) modal.classList.remove('hidden');
+            },
+
+            syncSettingsInputs() {
+                const goalInput = document.getElementById('input-daily-goal');
+                const startInput = document.getElementById('input-start-time');
+                const endInput = document.getElementById('input-end-time');
+                const intervalInput = document.getElementById('input-interval');
+                const notifToggle = document.getElementById('toggle-notifications');
+                const nameVoceInput = document.getElementById('input-name-voce');
+                const nameAmorInput = document.getElementById('input-name-namorada');
+
+                if (goalInput) goalInput.value = AppState.settings.dailyGoalMl;
+                this.updateGoalPreview(AppState.settings.dailyGoalMl);
+                if (startInput) startInput.value = AppState.settings.startTime;
+                if (endInput) endInput.value = AppState.settings.endTime;
+                if (intervalInput) intervalInput.value = String(AppState.settings.intervalMinutes);
+                if (notifToggle) notifToggle.checked = AppState.settings.notificationsEnabled;
+                if (nameVoceInput) nameVoceInput.value = AppState.avatars.voce.name || 'Você';
+                if (nameAmorInput) nameAmorInput.value = AppState.avatars.namorada.name || 'Meu Amor';
+            },
+
+            updateProfileNames() {
+                const vName = (document.getElementById('input-name-voce')?.value || '').trim() || 'Você';
+                const aName = (document.getElementById('input-name-namorada')?.value || '').trim() || 'Meu Amor';
+                AppState.avatars.voce.name = vName;
+                AppState.avatars.namorada.name = aName;
+                StorageService.save(AppState);
+                AvatarManager.render();
+                this.selectCupSize(AppState.selectedCupSize, true);
+                UI.showToast('Nomes atualizados! ♥', 'success');
+            },
+
+            exportBackup() {
+                try {
+                    const dataStr = JSON.stringify(AppState, null, 2);
+                    const blob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `hydrolove-backup-${StorageService.getTodayKey()}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                    UI.showToast('Backup salvo com fotos e histórico! 💾', 'success');
+                } catch (e) {
+                    UI.showToast('Erro ao gerar backup.', 'error');
+                }
+            },
+
+            importBackup(event) {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        if (!parsed || !parsed.settings || !parsed.avatars) {
+                            throw new Error('Arquivo inválido');
+                        }
+                        StorageService.save(parsed);
+                        AppState = StorageService.load();
+                        this.syncSettingsInputs();
+                        AvatarManager.render();
+                        ProgressManager.renderAll();
+                        ReminderManager.updateNextReminderUI();
+                        PWAManager.updateAppIconManifest();
+                        this.selectCupSize(AppState.selectedCupSize, true);
+                        UI.showToast('Backup restaurado com sucesso! 🎉', 'success');
+                    } catch (err) {
+                        UI.showToast('Arquivo de backup inválido.', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            },
+
+            updateGoalPreview(ml) {
+                const display = document.getElementById('settings-goal-display');
+                if (display) {
+                    display.textContent = `${(ml / 1000).toFixed(1).replace('.', ',')} L (${ml} ml)`;
+                }
+            },
+
+            saveSettings() {
+                const goalVal = Number(document.getElementById('input-daily-goal').value) || 2000;
+                const startVal = document.getElementById('input-start-time').value || '08:00';
+                const endVal = document.getElementById('input-end-time').value || '22:00';
+                const intervalVal = Number(document.getElementById('input-interval').value) || 60;
+
+                AppState.settings.dailyGoalMl = goalVal;
+                AppState.settings.startTime = startVal;
+                AppState.settings.endTime = endVal;
+                AppState.settings.intervalMinutes = intervalVal;
+
+                StorageService.save(AppState);
+                ProgressManager.renderAll();
+                ReminderManager.updateNextReminderUI();
+                UI.showToast('Ajustes salvos e lembretes atualizados!', 'success');
+            },
+
+            /* Fluxo de 1ª Vez (Onboarding) */
+            openOnboarding() {
+                this.onboardingSelectedAvatar = AppState.activeAvatar;
+                this.selectOnboardingAvatar(this.onboardingSelectedAvatar);
+                document.getElementById('ob-goal-range').value = AppState.settings.dailyGoalMl;
+                document.getElementById('ob-goal-label').textContent = ProgressManager.formatLiters(AppState.settings.dailyGoalMl);
+                document.getElementById('ob-start').value = AppState.settings.startTime;
+                document.getElementById('ob-end').value = AppState.settings.endTime;
+                document.getElementById('ob-interval').value = String(AppState.settings.intervalMinutes);
+                document.getElementById('onboarding-modal').classList.remove('hidden');
+            },
+
+            selectOnboardingAvatar(type) {
+                this.onboardingSelectedAvatar = type;
+                AppState.activeAvatar = type;
+                const btnVoce = document.getElementById('ob-avatar-voce');
+                const btnNamorada = document.getElementById('ob-avatar-namorada');
+                if (type === 'voce') {
+                    btnVoce.className = 'p-2.5 rounded-2xl border-2 border-hydro-500 bg-hydro-50/50 flex flex-col items-center gap-1.5 transition';
+                    btnNamorada.className = 'p-2.5 rounded-2xl border border-slate-200 bg-white flex flex-col items-center gap-1.5 transition';
+                } else {
+                    btnNamorada.className = 'p-2.5 rounded-2xl border-2 border-love-500 bg-love-50/50 flex flex-col items-center gap-1.5 transition';
+                    btnVoce.className = 'p-2.5 rounded-2xl border border-slate-200 bg-white flex flex-col items-center gap-1.5 transition';
+                }
+            },
+
+            async finishOnboarding() {
+                AppState.onboarded = true;
+                AppState.activeAvatar = this.onboardingSelectedAvatar;
+                AppState.settings.dailyGoalMl = Number(document.getElementById('ob-goal-range').value) || 2000;
+                AppState.settings.startTime = document.getElementById('ob-start').value || '08:00';
+                AppState.settings.endTime = document.getElementById('ob-end').value || '22:00';
+                AppState.settings.intervalMinutes = Number(document.getElementById('ob-interval').value) || 60;
+
+                if ('Notification' in window && Notification.permission === 'default') {
+                    try { await Notification.requestPermission(); } catch (e) {}
+                }
+
+                StorageService.save(AppState);
+                this.syncSettingsInputs();
+                AvatarManager.render();
+                ProgressManager.renderAll();
+                ReminderManager.updateNextReminderUI();
+
+                document.getElementById('onboarding-modal').classList.add('hidden');
+                UI.showToast('Tudo pronto! Lembretes agendados 💧', 'success');
+            }
+        };
+
+        // Inicializa o aplicativo quando o DOM estiver pronto
+        window.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+</body>
+</html>
